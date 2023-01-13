@@ -16,7 +16,6 @@ var A [][]float64
 var B [][]float64
 var C [][]float64
 
-var nbWorkers int
 var jobChannel chan job
 var resChannel chan res
 
@@ -48,6 +47,18 @@ func read(filename string) string {
 	return string(data)
 }
 
+func initMat() {
+	println(N)
+	A = make([][]float64, N)
+	B = make([][]float64, N)
+	C = make([][]float64, N)
+	for i := 0; i < N; i++ {
+		A[i] = make([]float64, N)
+		B[i] = make([]float64, N)
+		C[i] = make([]float64, N)
+	}
+}
+
 func calcCoef(line int, column int) float64 {
 	var result float64
 	for k := 0; k < N; k++ {
@@ -58,8 +69,7 @@ func calcCoef(line int, column int) float64 {
 
 func worker(jobCh chan job, resCh chan res) {
 	for {
-		var job job
-		job = <-jobCh
+		job := <-jobCh
 		var result res
 		result.x = job.x
 		result.y = job.y
@@ -68,35 +78,29 @@ func worker(jobCh chan job, resCh chan res) {
 	}
 }
 
+const nbWorkers int = 10
+
 func main() {
 	inputFile, err := os.OpenFile("input.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	defer inputFile.Close()
 	check(err)
 
-	data := read(inputFile.Name())
-	slidedData := strings.Split(data, "-")
-
-	matA := strings.Split(slidedData[0], "\n")
-	matB := strings.Split(slidedData[1], "\n")[1:]
+	mat := strings.Split(read(inputFile.Name()), "-")
+	matA := strings.Split(mat[0], "\n")
+	matB := strings.Split(mat[1], "\n")[1:]
 	N = len(matB)
-	A = make([][]float64, N)
-	B = make([][]float64, N)
-	C = make([][]float64, N)
+	initMat()
 
 	for i := 0; i < N; i++ {
-		A[i] = make([]float64, N)
-		B[i] = make([]float64, N)
-		C[i] = make([]float64, N)
 		for j := 0; j < N; j++ {
-			A[i][j], _ = strconv.ParseFloat(strings.Split(matA[i], " ")[j], 8)
-			B[i][j], _ = strconv.ParseFloat(strings.Split(matB[i], " ")[j], 8)
+			A[i][j], _ = strconv.ParseFloat(strings.Split(matA[i], " ")[j], 3)
+			B[i][j], _ = strconv.ParseFloat(strings.Split(matB[i], " ")[j], 3)
 		}
 	}
 
 	var jobChannel = make(chan job, N)
 	var resChannel = make(chan res, N)
 
-	nbWorkers = 4
 	for i := 0; i < nbWorkers; i++ {
 		go worker(jobChannel, resChannel)
 	}
