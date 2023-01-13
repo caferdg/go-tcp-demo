@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -13,14 +12,13 @@ var A [][]float64
 var B [][]float64
 var C [][]float64
 
+var nbWorkers int
 var jobChannel chan job
 var resChannel chan res
 
 type job struct {
-	line   []float64
-	column []float64
-	x      int
-	y      int
+	x int
+	y int
 }
 
 type res struct {
@@ -36,9 +34,8 @@ func check(e error) {
 }
 
 func write(text string, file *os.File) {
-	if _, err := file.WriteString(text); err != nil {
-		panic(err)
-	}
+	_, err := file.WriteString(text)
+	check(err)
 }
 
 func read(filename string) string {
@@ -47,30 +44,32 @@ func read(filename string) string {
 	return string(data)
 }
 
-func calcCoef(line []float64, column []float64) float64 {
+func calcCoef(line int, column int) float64 {
 	var result float64
 	for k := 0; k < N; k++ {
-		result += line[k] * column[k]
+		result += A[line][k] * B[column][k]
 	}
 	return result
 }
 
 func worker(jobCh chan job, resCh chan res) {
-	var job job
-	job = <-jobCh
-	var result res
-	result.x = job.x
-	result.y = job.y
-	result.value = calcCoef(job.line, job.column)
-	resCh <- result
+	for {
+		var job job
+		job = <-jobCh
+		var result res
+		result.x = job.x
+		result.y = job.y
+		result.value = calcCoef(result.x, result.y)
+		resCh <- result
+	}
 }
 
 func main() {
-	file, err := os.OpenFile("input.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	defer file.Close()
+	inputFile, err := os.OpenFile("input.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	defer inputFile.Close()
 	check(err)
 
-	data := read(file.Name())
+	data := read(inputFile.Name())
 	slidedData := strings.Split(data, "-")
 
 	matA := strings.Split(slidedData[0], "\n")
@@ -93,23 +92,30 @@ func main() {
 	var jobChannel = make(chan job, N)
 	var resChannel = make(chan res, N)
 
-	for i := 0; i < 10; i++ {
+	nbWorkers = 4
+	for i := 0; i < nbWorkers; i++ {
 		go worker(jobChannel, resChannel)
 	}
 
 	go func() {
 		for i := 0; i < N; i++ {
 			for j := 0; j < N; j++ {
-				jobChannel <- job{A[i], B[j], i, j}
+				jobChannel <- job{i, j}
 			}
 		}
 	}()
 
 	for i := 0; i < N*N; i++ {
 		result := <-resChannel
-		fmt.Print("Result received :", result.x, " ", result.y, " ", result.value, "\n")
 		C[result.x][result.y] = result.value
 	}
 
-	fmt.Print(C)
+	outputFile, err := os.OpenFile("output.txt", os.O_CREATE|os.O_WRONLY, 0600)
+	for i := 0; i < N; i++ {
+		for j := 0; j < N; j++ {
+			write(strconv.FormatFloat(C[i][j], 'f', 1, 64)+" ", outputFile)
+		}
+		write("\n", outputFile)
+	}
+	defer outputFile.Close()
 }
