@@ -1,3 +1,7 @@
+/*
+ * My first program in Go :)
+ */
+
 package main
 
 import (
@@ -47,7 +51,7 @@ func read(filename string) string {
 func calcCoef(line int, column int) float64 {
 	var result float64
 	for k := 0; k < N; k++ {
-		result += A[line][k] * B[column][k]
+		result += A[line][k] * B[k][column]
 	}
 	return result
 }
@@ -59,7 +63,7 @@ func worker(jobCh chan job, resCh chan res) {
 		var result res
 		result.x = job.x
 		result.y = job.y
-		result.value = calcCoef(result.x, result.y)
+		result.value = calcCoef(job.x, job.y)
 		resCh <- result
 	}
 }
@@ -118,4 +122,6 @@ func main() {
 		write("\n", outputFile)
 	}
 	defer outputFile.Close()
+
+	println("Done!")
 }
