@@ -1,5 +1,5 @@
 /*
- * My first program in Go :)
+ * Matrix multiplication
  */
 
 package main
