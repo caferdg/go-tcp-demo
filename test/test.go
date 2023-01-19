@@ -2,7 +2,7 @@
  * Matrix multiplication
  */
 
-package main
+package test
 
 import (
 	"io/ioutil"
