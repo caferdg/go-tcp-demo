@@ -1,3 +1,3 @@
 # projet-go
 
-`go run <inputPicture> <outputPicture>`
+`go run main.go <inputPicture> <outputPicture>`
