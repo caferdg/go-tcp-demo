@@ -1,13 +1,30 @@
 package main
 
 import (
+	"bufio"
+	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
+	"strings"
+	"time"
 )
 
 var HOST string = "localhost"
 var PORT string
+
+func write(text string, file *os.File) {
+	_, err := file.WriteString(text)
+	check(err)
+}
+
+func read(filename string) string {
+	data, err := ioutil.ReadFile(filename)
+	check(err)
+	return string(data)
+}
 
 func check(e error) {
 	if e != nil {
@@ -16,32 +33,46 @@ func check(e error) {
 }
 
 func main() {
-	if len(os.Args) != 5 {
-		print("Usage: go run client.go <port> <inputfile> <outputFile> <showTime (y/n)>\n")
+	if len(os.Args) != 4 {
+		println("Usage: go run client.go <port> <inputPath> <outputPath>")
 		os.Exit(1)
 	}
 
+	cwd, _ := os.Getwd()
 	PORT = os.Args[1]
-	input := os.Args[2]
-	output := os.Args[3]
+	inputPath := os.Args[2]
+	outputPath := os.Args[3]
 	socket := HOST + ":" + PORT
 
+	if _, err := os.Stat(inputPath); errors.Is(err, os.ErrNotExist) {
+		fmt.Println("Input file not found in " + cwd + "/" + inputPath)
+		os.Exit(1)
+	}
+	inputFile, err := os.OpenFile(inputPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	defer inputFile.Close()
+	check(err)
+
 	conn, err := net.Dial("tcp", socket)
-	check(err)
 	defer conn.Close()
+	check(err)
+	data := read(inputFile.Name()) + "$"
+	io.WriteString(conn, data)
+	inputFile.Close()
 
-	fi, err := os.Open(input)
+	reader := bufio.NewReader(conn)
+	startTime := time.Now()
+	message, err := reader.ReadString('$')
 	check(err)
-	defer fi.Close()
-	_, err = io.Copy(conn, fi)
-	check(err)
-	print("File sent\n")
+	elapsed := time.Since(startTime)
+	message = strings.TrimSuffix(message, "$")
 
-	fo, err := os.Create(output)
+	outputFile, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY, 0600)
+	defer outputFile.Close()
 	check(err)
-	defer fo.Close()
-	_, err = io.Copy(fo, conn)
-	check(err)
-	print("File received\n")
+	write(message, outputFile)
+	outputFile.Close()
 
+	conn.Close()
+	fmt.Println("Done in " + elapsed.String())
+	fmt.Println("File saved to " + cwd + "/" + outputPath)
 }
