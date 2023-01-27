@@ -5,7 +5,7 @@ Simple demonstration of client-server TCP connection used to calcul a matrix mul
 The main purpose is to properly use Go routines and parallel programming to execute a task efficiently.
 
 ## Execution
-Server side : `go run server/server.go <port>`
+Server side : `go run server/server.go <port>`\
 Client side : `go run server/server.go <port> <inputPath> <outputPath>`
 
 ## Rules
@@ -13,6 +13,6 @@ Input file must follow the exact same syntax as the `example.txt` file.
 
 ## Statistics
 The `matrixExamples` folder contains some examples of matrices to test the program.
-`n.txt` is the input file for 2 matrix of size n*n.
+`n.txt` is the input file for 2 matrix of size **n*n**.
 
 // TODO : Measures
