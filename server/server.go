@@ -8,13 +8,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var HOST string = "localhost"
 var stopWorker user = user{nil, -1, -1, nil, nil} // Special user to stop workers
 
 const chanSize int = 100
-const nbWorkersPerUser int = 1
+const nbWorkersPerUser int = 10
 
 type job struct {
 	x      int
@@ -104,42 +105,47 @@ func worker(jobCh chan job, resCh chan res) {
 	}
 }
 
-func handleUser(user user) {
+func handleUser(newUser user) {
 	jobChannel := make(chan job, chanSize)
 	resChannel := make(chan res, chanSize)
 	for i := 0; i < nbWorkersPerUser; i++ {
 		go worker(jobChannel, resChannel)
 	}
 
-	defer user.connection.Close()
-	fmt.Println("New connection, id :", user.id)
+	defer newUser.connection.Close()
+	fmt.Println("New connection, id :", newUser.id)
 
-	reader := bufio.NewReader(user.connection)
+	reader := bufio.NewReader(newUser.connection)
 	data, err := reader.ReadString('$')
 	check(err)
 	data = strings.TrimSuffix(data, "$")
 	var C [][]float64
 
-	user.matA, user.matB, C = inputTextToMat(data)
+	start := time.Now()
 
+	newUser.matA, newUser.matB, C = inputTextToMat(data)
+	newUser.sizeMat = len(newUser.matA)
 	go func() {
-		for i := 0; i < user.sizeMat; i++ {
-			for j := 0; j < user.sizeMat; j++ {
-				jobChannel <- job{i, j, user}
+		for i := 0; i < newUser.sizeMat; i++ {
+			for j := 0; j < newUser.sizeMat; j++ {
+				jobChannel <- job{i, j, newUser}
 			}
 		}
 	}()
 
-	for i := 0; i < user.sizeMat*user.sizeMat; i++ {
+	for i := 0; i < newUser.sizeMat*newUser.sizeMat; i++ {
 		result := <-resChannel
 		C[result.x][result.y] = result.value
 	}
 
 	resMessage := matToString(C)
 
-	io.WriteString(user.connection, resMessage+"$")
-	user.connection.Close()
-	fmt.Println("Connection", user.id, "closed")
+	elapsed := time.Since(start)
+	println("------- Time elapsed : ", elapsed.String())
+
+	io.WriteString(newUser.connection, resMessage+"$")
+	newUser.connection.Close()
+	fmt.Println("Connection", newUser.id, "closed")
 	// Killing workers
 	for i := 0; i < nbWorkersPerUser; i++ {
 		jobChannel <- job{0, 0, stopWorker}
