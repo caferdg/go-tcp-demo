@@ -18,9 +18,10 @@ const chanSize int = 100
 const nbWorkersPerUser int = 10
 
 type job struct {
-	x      int
-	y      int
-	client user
+	x       int
+	y       int
+	ligne   *[]float64
+	colonne *[]float64
 }
 
 type res struct {
@@ -82,11 +83,11 @@ func matToString(mat [][]float64) string {
 	return res
 }
 
-func calcCoef(line int, column int, client user) float64 {
+func calcCoef(line *[]float64, column *[]float64) float64 {
 	var result float64
-	size := len(client.matA)
+	size := len(*line)
 	for k := 0; k < size; k++ {
-		result += client.matA[line][k] * client.matB[k][column]
+		result += (*line)[k] * (*column)[k]
 	}
 	return result
 }
@@ -94,13 +95,13 @@ func calcCoef(line int, column int, client user) float64 {
 func worker(jobCh chan job, resCh chan res) {
 	for {
 		job := <-jobCh
-		if job.client.id == -1 {
+		if job.x == -1 && job.y == -1 {
 			break
 		}
 		var result res
 		result.x = job.x
 		result.y = job.y
-		result.value = calcCoef(job.x, job.y, job.client)
+		result.value = calcCoef(job.ligne, job.colonne)
 		resCh <- result
 	}
 }
@@ -128,7 +129,9 @@ func handleUser(newUser user) {
 	go func() {
 		for i := 0; i < newUser.sizeMat; i++ {
 			for j := 0; j < newUser.sizeMat; j++ {
-				jobChannel <- job{i, j, newUser}
+				line := newUser.matA[i]
+				column := newUser.matB[:][j]
+				jobChannel <- job{i, j, &line, &column}
 			}
 		}
 	}()
@@ -148,7 +151,7 @@ func handleUser(newUser user) {
 	fmt.Println("Connection", newUser.id, "closed")
 	// Killing workers
 	for i := 0; i < nbWorkersPerUser; i++ {
-		jobChannel <- job{0, 0, stopWorker}
+		jobChannel <- job{-1, -1, nil, nil}
 	}
 }
 
