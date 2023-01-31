@@ -18,10 +18,10 @@ const chanSize int = 100
 const nbWorkersPerUser int = 10
 
 type job struct {
-	x       int
-	y       int
-	ligne   *[]float64
-	colonne *[]float64
+	x      int
+	y      int
+	line   *[]float64
+	column *[]float64
 }
 
 type res struct {
@@ -101,19 +101,21 @@ func worker(jobCh chan job, resCh chan res) {
 		var result res
 		result.x = job.x
 		result.y = job.y
-		result.value = calcCoef(job.ligne, job.colonne)
+		result.value = calcCoef(job.line, job.column)
 		resCh <- result
 	}
 }
 
 func handleUser(newUser user) {
+	defer newUser.connection.Close()
+
 	jobChannel := make(chan job, chanSize)
 	resChannel := make(chan res, chanSize)
+
 	for i := 0; i < nbWorkersPerUser; i++ {
 		go worker(jobChannel, resChannel)
 	}
 
-	defer newUser.connection.Close()
 	fmt.Println("New connection, id :", newUser.id)
 
 	reader := bufio.NewReader(newUser.connection)
@@ -144,11 +146,12 @@ func handleUser(newUser user) {
 	resMessage := matToString(C)
 
 	elapsed := time.Since(start)
-	println("------- Time elapsed : ", elapsed.String())
+	println("------- Time elapsed : ", elapsed.String(), "| amount of workers : ", nbWorkersPerUser, "-------")
 
 	io.WriteString(newUser.connection, resMessage+"$")
 	newUser.connection.Close()
 	fmt.Println("Connection", newUser.id, "closed")
+
 	// Killing workers
 	for i := 0; i < nbWorkersPerUser; i++ {
 		jobChannel <- job{-1, -1, nil, nil}
