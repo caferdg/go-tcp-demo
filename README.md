@@ -11,8 +11,6 @@ Client side : `go run client/client.go <port> <inputPath> <outputPath>`
 ## Rules
 Input file must follow the exact same syntax as the `example.txt` file.
 
-## Statistics
-The `matrixExamples` folder contains some examples of matrices to test the program.
+## Tests
+The `matrixExamples` folder contains examples of matrix to test the program.
 `n.txt` is the input file for 2 matrix of size **n*n**.
-
-// TODO : Measures
