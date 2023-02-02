@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"time"
 )
 
 var HOST string = "localhost"
@@ -60,10 +59,8 @@ func main() {
 	inputFile.Close()
 
 	reader := bufio.NewReader(conn)
-	startTime := time.Now()
 	message, err := reader.ReadString('$')
 	check(err)
-	elapsed := time.Since(startTime)
 	message = strings.TrimSuffix(message, "$")
 
 	outputFile, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY, 0600)
@@ -73,6 +70,5 @@ func main() {
 	outputFile.Close()
 
 	conn.Close()
-	fmt.Println("Done in " + elapsed.String())
 	fmt.Println("File saved to " + cwd + "/" + outputPath)
 }

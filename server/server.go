@@ -124,9 +124,8 @@ func handleUser(newUser user) {
 	data = strings.TrimSuffix(data, "$")
 	var C [][]float64
 
-	start := time.Now()
-
 	newUser.matA, newUser.matB, C = inputTextToMat(data)
+	start := time.Now()
 	newUser.sizeMat = len(newUser.matA)
 	go func() {
 		for i := 0; i < newUser.sizeMat; i++ {
@@ -142,15 +141,13 @@ func handleUser(newUser user) {
 		result := <-resChannel
 		C[result.x][result.y] = result.value
 	}
+	elapsed := time.Since(start)
 
 	resMessage := matToString(C)
 
-	elapsed := time.Since(start)
-	println("------- Time elapsed : ", elapsed.String(), "| amount of workers : ", nbWorkersPerUser, "-------")
-
 	io.WriteString(newUser.connection, resMessage+"$")
 	newUser.connection.Close()
-	fmt.Println("Connection", newUser.id, "closed")
+	fmt.Println("Connection", newUser.id, "closed", "computation time : ", elapsed.String(), "amount of workers : ", nbWorkersPerUser)
 
 	// Killing workers
 	for i := 0; i < nbWorkersPerUser; i++ {
