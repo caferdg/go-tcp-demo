@@ -130,9 +130,11 @@ func handleUser(newUser user) {
 	go func() {
 		for i := 0; i < newUser.sizeMat; i++ {
 			for j := 0; j < newUser.sizeMat; j++ {
-				line := newUser.matA[i]
-				column := newUser.matB[:][j]
-				jobChannel <- job{i, j, &line, &column}
+				column := make([]float64, newUser.sizeMat)
+				for k := 0; k < newUser.sizeMat; k++ {
+					column[k] = newUser.matB[k][j]
+				}
+				jobChannel <- job{i, j, &(newUser.matA[i]), &(column)}
 			}
 		}
 	}()
@@ -147,7 +149,7 @@ func handleUser(newUser user) {
 
 	io.WriteString(newUser.connection, resMessage+"$")
 	newUser.connection.Close()
-	fmt.Println("Connection", newUser.id, "closed", "computation time : ", elapsed.String(), "amount of workers : ", nbWorkersPerUser)
+	fmt.Println("Connection", newUser.id, "closed,", "computation time : ", elapsed.String()+",", "amount of workers : ", nbWorkersPerUser)
 
 	// Killing workers
 	for i := 0; i < nbWorkersPerUser; i++ {

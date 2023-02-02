@@ -63,7 +63,7 @@ func main() {
 	check(err)
 	message = strings.TrimSuffix(message, "$")
 
-	outputFile, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY, 0600)
+	outputFile, err := os.OpenFile(outputPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 	defer outputFile.Close()
 	check(err)
 	write(message, outputFile)
